@@ -1,0 +1,45 @@
+# Unity generated
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]serSettings/
+[Mm]emoryCaptures/
+
+# IDE auto-generated
+*.csproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+.vs/
+.vscode/
+.idea/
+
+# OS generated
+.DS_Store
+Thumbs.db
+
+# Docs
+**/Docs/
+
+# Editor workspace config
+**/.kiro/
+
+
+# Third-party paid plugins (Asset Store EULA - do NOT redistribute)
+Assets/ThirdPartyPlugins/
+Assets/ThirdPartyPlugins.meta
+
+# Sponza URP asset - CC BY 3.0 (Crytek) + CC BY-ND 4.0 (NoEmotion HDRs)
+# Included for demo purposes; see copyright.txt for details

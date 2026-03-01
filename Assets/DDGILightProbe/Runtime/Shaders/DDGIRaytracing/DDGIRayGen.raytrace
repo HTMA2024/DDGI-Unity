@@ -1,0 +1,125 @@
+#include "UnityShaderVariables.cginc"
+#include "DDGIGBuffer.hlsl"
+
+#pragma max_recursion_depth 1
+
+RaytracingAccelerationStructure _DDGIAccelStruct : register(t0, space1);
+
+StructuredBuffer<float4> _ProbePositions;
+uint _ProbeCount;
+uint _RaysPerProbe;
+uint _FixedRayCount;
+uint _FrameIndex;
+float _RayMinDistance;
+float _RayMaxDistance;
+
+float _RayRotationAngle;
+float4x4 _RayRotationMatrix;
+
+TextureCube<float4> _SkyboxTexture;
+SamplerState sampler_SkyboxTexture;
+float _SkyboxIntensity;
+
+Texture2D<float4> _ProbeData;
+uint _ProbeDataWidth;
+
+RWTexture2D<float4> _GBuffer_PositionDistance;
+RWTexture2D<float4> _GBuffer_NormalHitFlag;
+RWTexture2D<float4> _GBuffer_AlbedoRoughness;
+RWTexture2D<float4> _GBuffer_EmissionMetallic;
+
+uint _GBufferWidth;
+uint _GBufferHeight;
+
+uint2 GetGBufferCoord(uint probeIndex, uint rayIndex)
+{
+    uint linearIndex = probeIndex * _RaysPerProbe + rayIndex;
+    return uint2(linearIndex % _GBufferWidth, linearIndex / _GBufferWidth);
+}
+
+float3 GetRayDirection(uint rayIndex)
+{
+
+    bool isFixedRay = (rayIndex < _FixedRayCount);
+
+    uint sampleIndex = isFixedRay ? rayIndex : (rayIndex - _FixedRayCount);
+    uint numRays = isFixedRay ? _FixedRayCount : (_RaysPerProbe - _FixedRayCount);
+
+    float3 dir = FibonacciSphereDirection(sampleIndex, numRays);
+
+    if (isFixedRay)
+        return normalize(dir);
+
+    dir = mul((float3x3)_RayRotationMatrix, dir);
+    return normalize(dir);
+}
+
+float3 GetProbeOffset(uint probeIndex)
+{
+    uint2 probeDataCoord = uint2(probeIndex % _ProbeDataWidth, probeIndex / _ProbeDataWidth);
+    return _ProbeData[probeDataCoord].xyz;
+}
+
+[shader("raygeneration")]
+void DDGIRayGenShader()
+{
+
+    uint dispatchIndex = DispatchRaysIndex().x;
+
+    uint probeIndex = dispatchIndex / _RaysPerProbe;
+    uint rayIndex = dispatchIndex % _RaysPerProbe;
+
+    if (probeIndex >= _ProbeCount)
+        return;
+
+    float3 probePosition = _ProbePositions[probeIndex].xyz;
+
+    float3 probeOffset = GetProbeOffset(probeIndex);
+    probePosition += probeOffset;
+
+    float3 rayDirection = GetRayDirection(rayIndex);
+
+    RayDesc ray;
+    ray.Origin = probePosition;
+    ray.Direction = rayDirection;
+    ray.TMin = _RayMinDistance;
+    ray.TMax = _RayMaxDistance;
+
+    DDGIRayPayload payload = InitDDGIRayPayload();
+
+    TraceRay(
+        _DDGIAccelStruct,
+        RAY_FLAG_NONE,
+        0xFF,
+        0,
+        1,
+        0,
+        ray,
+        payload
+    );
+
+    if (payload.hitFlag == 0)
+    {
+        float3 skyColor = _SkyboxTexture.SampleLevel(sampler_SkyboxTexture, rayDirection, 0).rgb;
+        payload.emission = skyColor * _SkyboxIntensity;
+
+        payload.hitDistance = 1e27f;
+        payload.position = probePosition + rayDirection * _RayMaxDistance;
+        payload.normal = -rayDirection;
+    }
+
+    uint2 gBufferCoord = GetGBufferCoord(probeIndex, rayIndex);
+
+    _GBuffer_PositionDistance[gBufferCoord] = float4(payload.position, payload.hitDistance);
+    _GBuffer_NormalHitFlag[gBufferCoord] = float4(payload.normal, float(payload.hitFlag));
+    _GBuffer_AlbedoRoughness[gBufferCoord] = float4(payload.albedo, payload.roughness);
+    _GBuffer_EmissionMetallic[gBufferCoord] = float4(payload.emission, payload.metallic);
+}
+
+[shader("miss")]
+void DDGIMissShader(inout DDGIRayPayload payload : SV_RayPayload)
+{
+
+    payload.hitFlag = 0;
+    payload.hitDistance = -1.0;
+}
