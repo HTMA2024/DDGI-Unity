@@ -6,7 +6,7 @@ A dynamic diffuse global illumination system built on Unity URP 14.0 + DXR, base
 
 ## Showcase
 
-![overview](assets/github-repo-images/DDGI-Unity/overview.gif)
+![overview](Images/overview.gif)
 
 ## Rendering Pipeline
 
@@ -28,11 +28,11 @@ Apply GI (URP RendererFeature):
 
 | Direct Irradiance | Indirect Irradiance | Outgoing Radiance | Irradiance |
 |---|---|---|---|
-| ![direct](assets/github-repo-images/DDGI-Unity/direct-irradiance.jpg) | ![indirect](assets/github-repo-images/DDGI-Unity/indirect-irradiance.jpg) | ![radiance](assets/github-repo-images/DDGI-Unity/radiance.jpg) | ![irradiance](assets/github-repo-images/DDGI-Unity/irradiance.jpg) |
+| ![direct](Images/direct-irradiance.jpg) | ![indirect](Images/indirect-irradiance.jpg) | ![radiance](Images/radiance.jpg) | ![irradiance](Images/irradiance.jpg) |
 
 ### Probe Relocation
 
-![probe-relocation](assets/github-repo-images/DDGI-Unity/probe-relocation.gif)
+![probe-relocation](Images/probe-relocation.gif)
 
 ### Implementation Details
 
